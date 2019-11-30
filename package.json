@@ -1,0 +1,20 @@
+{
+  "name": "create-react-app-with-options",
+  "version": "0.0.0",
+  "description": "a cli tool which provides options to create-react-app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Rick Brown <ricky.brown.00@gmail.com> (https://github.com/RickBr0wn/minimal-react-boilerplate)",
+  "license": "MIT",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "friendly-words": "^1.1.10",
+    "inquirer": "^7.0.0",
+    "shelljs": "^0.8.3"
+  },
+  "bin": {
+    "create-react-app-with-options": "index.js"
+  }
+}
