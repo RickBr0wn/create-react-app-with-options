@@ -2,11 +2,11 @@ const createAppJs = require('./App.js');
 const createIndexHtml = require('./indexHtml.js');
 const createIndexCss = require('./indexCss.js');
 
-module.exports = appName => ({
-  'App.js': createAppJs(),
+module.exports = answers => ({
+  'App.js': createAppJs(answers),
   'index.js': require('./index.js'),
-  'store.js': require('./store.js'),
-  'index.html': createIndexHtml(appName),
+  'store.js': answers.stateManagement ? require('./store.js') : '',
+  'index.html': createIndexHtml(answers.appName),
   'index.css': createIndexCss(),
   '.prettierrc': require('./prettierrc.js'),
 });
