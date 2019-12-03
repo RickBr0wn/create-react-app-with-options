@@ -9,7 +9,6 @@ const headerInfos = require('./functions/headerInfos');
 const Spinner = require('./functions/spinner');
 
 // const appName = process.argv[2];
-// let appDirectory, appName, isUsingYarn, dependencies;
 
 const clearCommandLine = shell.exec('clear');
 
@@ -52,10 +51,7 @@ inquirer
           name: 'redux, react-redux, redux-thunk',
         },
         {
-          name: 'react useContext() api',
-        },
-        {
-          name: `No state management library`,
+          name: `no state management library`,
           checked: true,
         },
       ],
@@ -126,8 +122,8 @@ const installPackages = ({
 }) => {
   return new Promise(resolve => {
     console.info(
-      `\nInstalling ${cssStyles ? cssStyles + ', ' : ''} ${
-        stateManagement ? stateManagement : ''
+      `\nInstalling ${cssStyles ? cssStyles : ''}${
+        stateManagement ? ', ' + stateManagement : ''
       }.\n`.cyan
     );
     shell.exec(
@@ -138,6 +134,7 @@ const installPackages = ({
           ? 'redux react-redux redux-thunk'
           : ''
       }`,
+      { silent: true },
       () => {
         console.info('\nFinished installing packages\n'.green);
         resolve();
@@ -166,6 +163,19 @@ const updateTemplates = answers => {
               res();
             }
           );
+        } else if (fileName === 'store.js') {
+          if (answers.stateManagement === 'redux, react-redux, redux-thunk') {
+            fs.writeFile(
+              `${appDirectory}/src/${fileName}`,
+              templates[fileName],
+              function(err) {
+                if (err) {
+                  return console.log(err);
+                }
+                res();
+              }
+            );
+          }
         } else if (fileName === '.prettierrc') {
           fs.writeFile(
             `${appDirectory}/.prettierrc`,
