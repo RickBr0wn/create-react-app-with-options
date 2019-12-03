@@ -6,9 +6,11 @@ const fs = require('fs');
 const generateRandomName = require('./functions/generateRandomName');
 const completedInfos = require('./functions/completedInfos');
 const headerInfos = require('./functions/headerInfos');
+const Spinner = require('./functions/spinner');
 
 // const appName = process.argv[2];
-let appDirectory, appName, isUsingYarn;
+
+const clearCommandLine = shell.exec('clear');
 
 headerInfos();
 
@@ -28,21 +30,60 @@ inquirer
     },
     {
       type: 'list',
-      name: 'appDependencies',
-      message: 'Which package setup do you want?',
-      choices: ['react, redux, router', 'blank', 'blank'],
-      default: 0,
+      message: 'How do you intend to manage your CSS styling?',
+      name: 'cssStyles',
+      choices: [
+        {
+          name: 'standard CSS modules',
+          checked: true,
+        },
+        {
+          name: 'styled-components',
+        },
+      ],
+    },
+    {
+      type: 'list',
+      message: 'How do you intend to manage the state in your app?',
+      name: 'stateManagement',
+      choices: [
+        {
+          name: 'redux, react-redux, redux-thunk',
+        },
+        {
+          name: `no state management library`,
+          checked: true,
+        },
+      ],
+    },
+    {
+      type: 'confirm',
+      name: 'confirmChoices',
+      message: 'Are you sure you want to continue with these settings?',
+      default: true,
     },
   ])
   .then(answers => {
-    appName = answers.appName;
-    appDirectory = `${process.cwd()}/${appName}`;
-    isUsingYarn = answers.packetManager === 'yarn';
-    run();
+    if (answers.confirmChoices) {
+      if (answers.cssStyles === 'standard CSS modules') {
+        answers.cssStyles = false;
+      }
+      if (
+        answers.stateManagement === 'react useContext() api' ||
+        answers.stateManagement === 'No state management library'
+      ) {
+        answers.stateManagement = false;
+      }
+      answers.appDirectory = `${process.cwd()}/${answers.appName}`;
+      answers.isUsingYarn = answers.packetManager === 'yarn';
+      run(answers);
+    } else {
+      process.exit();
+    }
   });
 
-const run = async () => {
-  let success = await createReactApp(appName);
+const run = async answers => {
+  let success = await createReactApp(answers);
 
   if (!success) {
     console.log(
@@ -52,46 +93,48 @@ const run = async () => {
     return false;
   }
 
-  await installPackages();
-  await updateTemplates();
-  completedInfos();
+  await installPackages(answers);
+  await updateTemplates(answers);
+
+  completedInfos(answers);
 };
 
-const createReactApp = appName => {
+const createReactApp = ({ appName }) => {
   return new Promise(resolve => {
-    shell.exec(`create-react-app ${appName}`, () => {
-      console.info('Created react app');
+    console.info(
+      '\nStarting create-react-app, this will take a little time, \nso be patient..'
+        .cyan
+    );
+    shell.exec(`create-react-app ${appName}`, { silent: true }, () => {
+      console.info(
+        `\nYour create-react-app ${appName}, has been created.`.cyan
+      );
       resolve(true);
     });
   });
 };
 
-// const cdIntoNewApp = appName => {
-//   return new Promise(resolve => {
-//     shell.exec(`cd ${appName} && touch test2.js`, () => {
-//       resolve();
-//     });
-//   });
-// };
-
-// const test = () => {
-//   return new Promise(resolve => {
-//     shell.exec(`touch test.js`, () => {
-//       resolve();
-//     });
-//   });
-// };
-
-const installPackages = () => {
+const installPackages = ({
+  appName,
+  stateManagement,
+  packetManager,
+  cssStyles,
+}) => {
   return new Promise(resolve => {
     console.info(
-      '\nInstalling redux, react-router, react-router-dom, react-redux, and redux-thunk.\n'
-        .cyan
+      `\nInstalling ${cssStyles ? cssStyles : ''}${
+        stateManagement ? ', ' + stateManagement : ''
+      }.\n`.cyan
     );
     shell.exec(
       `cd ${appName} && rm yarn.lock && ${
-        isUsingYarn ? 'yarn add' : 'npm i --save'
-      } redux react-router react-redux redux-thunk react-router-dom`,
+        packetManager === 'yarn' ? 'yarn add' : 'npm i --save '
+      } ${cssStyles ? cssStyles + ' ' : ''}${
+        stateManagement === 'redux, react-redux, redux-thunk'
+          ? 'redux react-redux redux-thunk'
+          : ''
+      }`,
+      { silent: true },
       () => {
         console.info('\nFinished installing packages\n'.green);
         resolve();
@@ -100,9 +143,9 @@ const installPackages = () => {
   });
 };
 
-const updateTemplates = () => {
-  let templates = require('./templates/templates.js')(appName);
-
+const updateTemplates = answers => {
+  let templates = require('./templates/templates.js')(answers);
+  const { appName, appDirectory } = answers;
   return new Promise(resolve => {
     let promises = [];
     console.info('\nCreating boilerplate code for dependencies\n'.cyan);
@@ -120,6 +163,19 @@ const updateTemplates = () => {
               res();
             }
           );
+        } else if (fileName === 'store.js') {
+          if (answers.stateManagement === 'redux, react-redux, redux-thunk') {
+            fs.writeFile(
+              `${appDirectory}/src/${fileName}`,
+              templates[fileName],
+              function(err) {
+                if (err) {
+                  return console.log(err);
+                }
+                res();
+              }
+            );
+          }
         } else if (fileName === '.prettierrc') {
           fs.writeFile(
             `${appDirectory}/.prettierrc`,
